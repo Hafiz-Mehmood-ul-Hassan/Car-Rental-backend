@@ -10,7 +10,6 @@ export const roleGuard = (...allowedRoles: string[]) => {
       if (!userRole) {
         throw new AppError("Role not found", 403);
       }
-
       if (!allowedRoles.includes(userRole)) {
         throw new AppError("Access denied", 403);
       }
