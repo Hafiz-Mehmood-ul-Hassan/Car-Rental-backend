@@ -6,6 +6,7 @@ const JWT_SECRET = process.env.JWT_SECRET as string;
 
 export interface AuthRequest extends Request {
   user?: any;
+  role?: string;
 }
 
 export const verifyToken = (

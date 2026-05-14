@@ -7,7 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-
 enum Role {
   ADMIN
   CAR_OWNER
@@ -21,51 +20,166 @@ enum KYCStatus {
   REJECTED
 }
 
-
 model User {
-  id          Int       @id @default(autoincrement())
+  id Int @id @default(autoincrement())
 
-  name        String
-  email       String    @unique
-  password    String
+  name     String
+  email    String @unique
+  password String
 
-  role        Role
+  role Role
 
-  isVerified  Boolean   @default(false)
+  isVerified Boolean @default(false)
 
-  kycStatus   KYCStatus @default(NOT_SUBMITTED)
+  kycStatus KYCStatus @default(NOT_SUBMITTED)
 
-  resetToken      String?
-  resetTokenExp   DateTime?
+  resetToken    String?
+  resetTokenExp DateTime?
 
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  
-  kyc         KYC?
+  kyc      KYC?
+  cars     Car[]
+  bookings Booking[]
+  payments      Payment[]
+  earnings      Earning[]
 }
 
-
-
 model KYC {
-  id        Int      @id @default(autoincrement())
-  userId    Int      @unique
+  id     Int @id @default(autoincrement())
+  userId Int @unique
 
-  fullName  String
-  cnic      String
-  address   String
-  phone     String
+  fullName String
+  cnic     String
+  address  String
+  phone    String
 
   cnicFront String
   cnicBack  String
   selfie    String
 
-  status    KYCStatus @default(PENDING)
+  status KYCStatus @default(PENDING)
 
   reviewNote String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+enum CarStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model Car {
+  id      Int @id @default(autoincrement())
+  ownerId Int
+
+  title       String
+  brand       String
+  model       String
+  year        Int
+  pricePerDay Float
+  location    String
+  description String?
+
+  images String[]
+
+  status     CarStatus @default(PENDING)
+  reviewNote String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  owner    User      @relation(fields: [ownerId], references: [id])
+  bookings Booking[]
+}
+
+enum BookingStatus {
+PENDING
+PAYMENT_PENDING
+CONFIRMED
+ACTIVE
+COMPLETED
+CANCELLED
+EXPIRED
+}
+
+model Booking {
+  id Int @id @default(autoincrement())
+
+  userId Int
+  carId  Int
+
+  startDate DateTime
+  endDate   DateTime
+
+  totalPrice Float
+
+  status BookingStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+  car  Car  @relation(fields: [carId], references: [id])
+  payment       Payment?
+  earning       Earning?
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+
+model Payment {
+  id            Int           @id @default(autoincrement())
+
+  bookingId     Int           @unique
+  userId        Int
+
+  amount        Float
+
+  status        PaymentStatus @default(PENDING)
+
+  provider      String        // Stripe / JazzCash / etc
+  transactionId String?       @unique
+
+  paidAt        DateTime?
+
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  booking       Booking       @relation(fields: [bookingId], references: [id])
+  user          User          @relation(fields: [userId], references: [id])
+}
+
+enum EarningStatus {
+  PENDING
+  AVAILABLE
+}
+
+model Earning {
+  id            Int           @id @default(autoincrement())
+
+  ownerId       Int
+  bookingId     Int           @unique
+
+  grossAmount   Float         // total paid by user
+  platformFee   Float         // system cut
+  netAmount     Float         // owner receives
+
+  status        EarningStatus @default(PENDING)
+
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  owner         User          @relation(fields: [ownerId], references: [id])
+  booking       Booking       @relation(fields: [bookingId], references: [id])
 }
