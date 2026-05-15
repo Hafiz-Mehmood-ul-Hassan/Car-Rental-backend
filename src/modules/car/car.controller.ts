@@ -1,91 +1,86 @@
-import { Request, Response } from "express";
-import { AuthRequest } from "../../middleware/auth.middleware";
-import * as service from "./car.service";
+import { Request, Response, NextFunction } from "express";
+import { createCarDraft, addCarImagesService,uploadCarDocumentService } from "./car.service";
+import { AppError } from "../../shared/errors/AppError";
 import { sendResponse } from "../../shared/responses/apiResponse";
+  
+// extend request type properly (recommended)
+interface AuthRequest extends Request {
+  user?: any;
+  files?: Express.Multer.File[];
+}
 
+export const createCarDraftController = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const ownerId = req.user.id;
 
-// ================= OWNER =================
+    const car = await createCarDraft(ownerId, req.body);
 
-export const createCar = async (req: AuthRequest, res: Response) => {
-  const ownerId = req.user!.id;
+    sendResponse(res, 201, true, "Car draft created successfully", car);
+  } catch (error) {
+    next(error);
+  }
+};
 
-  const files = req.files as Express.Multer.File[];
+export const uploadCarImagesController = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const carId = Number(req.params.id);
+    const ownerId = req.user.id;
+    
+    // console.log("Files received in controller:", req.files); // Debug log
+    const result = await addCarImagesService(
+      carId,
+      ownerId,
+      req.files || []
+    );
 
-  const images = files?.map((file) =>
-    file.path.replace(/\\/g, "/")
+    sendResponse(res, 200, true, "Car images uploaded successfully", result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const submitCarController = async (req: any, res: Response) => {
+  const carId = Number(req.params.id);
+  const ownerId = req.user.id;
+
+  const result = await submitCarForReviewService(carId, ownerId);
+
+  res.json({
+    success: true,
+    message: "Car submitted for review successfully",
+    data: result,
+  });
+};
+
+export const uploadCarDocumentController = async (req: any, res: Response) => {
+  const carId = Number(req.params.id);
+  const ownerId = req.user.id;
+
+  const type = req.body?.type;
+  const file = req.file;
+
+  if (!type) {
+    throw new AppError("Document type is required", 400);
+  }
+
+  const result = await uploadCarDocumentService(
+    carId,
+    ownerId,
+    type,
+    file
   );
-
-  const car = await service.createCarService(ownerId, req.body, images);
-
-  return sendResponse(res, 201,true, "Car submitted successfully", car);
-};
-
-export const getOwnerCars = async (req: AuthRequest, res: Response) => {
-  const data = await service.getOwnerCarsService(req.user!.id);
-
-  return sendResponse(res, 200, true, "Owner cars fetched", data);
-};
-
-export const updateOwnCar = async (req: AuthRequest, res: Response) => {
-  const data = await service.updateOwnCarService(
-    req.user!.id,
-    Number(req.params.id),
-    req.body
-  );
-
-  return sendResponse(res, 200, true, "Car updated", data);
-};
-
-export const deleteOwnCar = async (req: AuthRequest, res: Response) => {
-  const data = await service.deleteOwnCarService(
-    req.user!.id,
-    Number(req.params.id)
-  );
-
-  return sendResponse(res, 200, true, "Car deleted", data);
-};
-
-
-// ================= ADMIN =================
-
-export const getAllCarsAdmin = async (req: Request, res: Response) => {
-  const page = Number(req.query.page) || 1;
-  const limit = Number(req.query.limit) || 10;
-
-  const data = await service.getAllCarsAdminService(page, limit);
-
-  return sendResponse(res, 200, true, "All cars fetched", data);
-};
-
-export const updateCarStatus = async (req: Request, res: Response) => {
-  const { status, reviewNote } = req.body;
-
-  const data = await service.updateCarStatusService(
-    Number(req.params.id),
-    status,
-    reviewNote
-  );
-
-  return sendResponse(res, 200, true, "Car status updated", data);
-};
-
-export const deleteCarAdmin = async (req: Request, res: Response) => {
-  const data = await service.deleteCarAdminService(Number(req.params.id));
-
-  return sendResponse(res, 200, true, "Car deleted", data);
-};
-
-
-// ================= PUBLIC =================
-
-export const getApprovedCars = async (req: Request, res: Response) => {
-  const data = await service.getApprovedCarsService();
-
-  return sendResponse(res, 200, true, "Approved cars fetched", data);
-};
-
-export const getCarById = async (req: Request, res: Response) => {
-  const data = await service.getCarByIdService(Number(req.params.id));
-
-  return sendResponse(res, 200, true, "Car details fetched", data);
+  //  update car status to PENDING after document upload
+  await prisma.car.update({
+    where: { id: carId },
+    data: { status: "PENDING" },
+  });
+  sendResponse(res, 200, true, "Car document uploaded successfully");
 };

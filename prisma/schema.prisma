@@ -70,9 +70,11 @@ model KYC {
 }
 
 enum CarStatus {
+  DRAFT
   PENDING
   APPROVED
   REJECTED
+  SUSPENDED
 }
 
 model Car {
@@ -87,7 +89,6 @@ model Car {
   location    String
   description String?
 
-  images String[]
 
   status     CarStatus @default(PENDING)
   reviewNote String?
@@ -97,7 +98,60 @@ model Car {
 
   owner    User      @relation(fields: [ownerId], references: [id])
   bookings Booking[]
+  images    CarImage[]
+  documents CarDocument[]
 }
+
+model CarImage {
+  id        Int      @id @default(autoincrement())
+
+  carId     Int
+
+  imageUrl  String
+
+  createdAt DateTime @default(now())
+
+  car       Car @relation(fields: [carId], references: [id], onDelete: Cascade)
+}
+enum CarDocumentType {
+  REGISTRATION
+  INSURANCE
+  LICENSE_PLATE
+  OTHER
+}
+
+enum CarDocumentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model CarDocument {
+  id         Int      @id @default(autoincrement())
+
+  carId      Int
+
+  type       CarDocumentType
+
+  fileUrl    String
+
+  fileName   String?
+  mimeType   String?
+  size       Int?
+
+  status     CarDocumentStatus @default(PENDING)
+
+  reviewNote String?
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  car        Car @relation(fields: [carId], references: [id], onDelete: Cascade)
+
+  @@index([carId])
+}
+
+
 
 enum BookingStatus {
 PENDING

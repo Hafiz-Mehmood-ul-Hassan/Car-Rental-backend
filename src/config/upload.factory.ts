@@ -1,19 +1,28 @@
-import multer from "multer";
+import fs from "fs";
 import path from "path";
+import multer from "multer";
 
 export const createUpload = (folder: string) => {
+  const uploadPath = path.join("uploads", folder);
+
+  // ✅ CREATE FOLDER IF NOT EXISTS
+  if (!fs.existsSync(uploadPath)) {
+    fs.mkdirSync(uploadPath, { recursive: true });
+  }
+
   return multer({
     storage: multer.diskStorage({
       destination: (req, file, cb) => {
-        cb(null, `uploads/${folder}`);
+        cb(null, uploadPath);
       },
+
       filename: (req, file, cb) => {
         cb(null, Date.now() + "-" + file.originalname);
       },
     }),
 
     limits: {
-      fileSize: 5 * 1024 * 1024, // 5MB
+      fileSize: 5 * 1024 * 1024,
     },
 
     fileFilter: (req, file, cb) => {
