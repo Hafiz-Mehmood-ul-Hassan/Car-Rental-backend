@@ -1,78 +1,95 @@
 import express from "express";
+import {
+  createCarDraftController,
+  uploadCarImagesController,
+} from "./car.controller";
+
 import { verifyToken } from "../../middleware/auth.middleware";
 import { roleGuard } from "../../middleware/role.middleware";
-import { carUpload } from "./car.upload";
-import * as controller from "./car.controller";
-import { kycGuard } from "../../middleware/kyc.middleware";
-import { createCarSchema } from "./car.validation";
 import { validate } from "../../middleware/validate.middleware";
+import { kycGuard } from "../../middleware/kyc.middleware";
+import { createCarSchema,publicCarQuerySchema } from "./car.validation";
+import {
+  getPendingCarsController,
+  approveCarController,
+  rejectCarController,
+  getPublicCarsController,
+} from "./car.admin.controller";
+import { uploadCarDocumentController } from "./car.controller";
+
+// 👇 your generic upload middleware
+import { upload } from "./../../config/upload";
+import { carUpload } from "./car.upload";
 
 const router = express.Router();
 
-// ================= OWNER =================
-
+// =======================
+// 🚗 CREATE CAR DRAFT
+// =======================
 router.post(
-  "/owner",
+  "/",
   verifyToken,
   roleGuard("CAR_OWNER"),
   kycGuard,
   validate(createCarSchema),
+  createCarDraftController
+);
+
+// =======================
+// 🖼 UPLOAD CAR IMAGES
+// =======================
+router.post(
+  "/:id/images",
+
+  verifyToken,
+  roleGuard("CAR_OWNER"),
+  kycGuard,
+
   carUpload.array("images", 5),
-  controller.createCar
-);
 
-router.get(
-  "/owner",
-  verifyToken,
-  roleGuard("CAR_OWNER"),
-  controller.getOwnerCars
+  uploadCarImagesController
 );
+router.post(
+  "/:id/documents",
 
-router.patch(
-  "/owner/:id",
   verifyToken,
   roleGuard("CAR_OWNER"),
   kycGuard,
-  validate(createCarSchema),
-  controller.updateOwnCar
+  
+  carUpload.single("documents", 5),
+  uploadCarDocumentController
 );
-
-router.delete(
-  "/owner/:id",
-  verifyToken,
-  roleGuard("CAR_OWNER"),
-  kycGuard,
-  controller.deleteOwnCar
-);
-
-
-// ================= ADMIN =================
-
+// =======================
+// 📋 ADMIN ROUTES
+// =======================
 router.get(
-  "/admin",
+  "/admin/pending",
   verifyToken,
   roleGuard("ADMIN"),
-  controller.getAllCarsAdmin
+  getPendingCarsController
 );
 
 router.patch(
-  "/admin/:id/status",
+  "/admin/:id/approve",
   verifyToken,
   roleGuard("ADMIN"),
-  controller.updateCarStatus
+  approveCarController
 );
 
-router.delete(
-  "/admin/:id",
+router.patch(
+  "/admin/:id/reject",
   verifyToken,
   roleGuard("ADMIN"),
-  controller.deleteCarAdmin
+  rejectCarController
 );
 
+// =======================
+// 🌐 PUBLIC ROUTES
+// =======================
 
-// ================= PUBLIC =================
-
-router.get("/", controller.getApprovedCars);
-router.get("/:id", controller.getCarById);
-
+router.get(
+  "/public",
+  // validate(publicCarQuerySchema),
+  getPublicCarsController
+);
 export default router;

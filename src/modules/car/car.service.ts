@@ -1,106 +1,167 @@
-import * as repo from "./car.repository";
 import { AppError } from "../../shared/errors/AppError";
+import prisma from "../../config/prisma";
+import {
+  createCarRepo,
+  findCarById,
+  uploadCarImage,
+  updateCarStatusRepo,
+  getApprovedCarsRepo,
+} from "./car.repository";
 
+export const createCarDraft = async (ownerId: number, data: any) => {
+  const {
+    title,
+    brand,
+    model,
+    year,
+    pricePerDay,
+    location,
+    description,
+  } = data;
 
-// ================= OWNER =================
-
-export const createCarService = async (
-  ownerId: number,
-  payload: any,
-  images: string[]
-) => {
-    await   repo.createCar({
-    ...payload,
+  const car = await createCarRepo({
     ownerId,
-    images,
-
-    year: Number(payload.year),
-    pricePerDay: Number(payload.pricePerDay),
-    status: "PENDING",
+    title: title.trim(),
+    brand: brand.trim(),
+    model: model.trim(),
+    year: Number(year),
+    pricePerDay: Number(pricePerDay),
+    location: location.trim(),
+    description: description?.trim(),
+    status: "DRAFT",
   });
-  return true;
+
+  return car;
 };
 
-export const getOwnerCarsService = (ownerId: number) => {
-  return repo.findCarsByOwner(ownerId);
-};
-
-export const updateOwnCarService = async (
-  ownerId: number,
+export const addCarImagesService = async (
   carId: number,
-  data: any
-) => {
-  const car = await repo.findCarById(carId);
-
-  if (!car) {
-    throw new AppError("Car not found", 404);
-  }
-
-  if (car.ownerId !== ownerId) {
-    throw new AppError("Not allowed to modify this car", 403);
-  }
-
-  return repo.updateCar(carId, data);
-};
-
-export const deleteOwnCarService = async (
   ownerId: number,
-  carId: number
+  files: Express.Multer.File[]
 ) => {
-  const car = await repo.findCarById(carId);
-
+  if (!files || files.length === 0) {
+    throw new AppError("No images uploaded", 400);
+  }
+  
+  const car = await findCarById(carId);
+  
   if (!car) {
     throw new AppError("Car not found", 404);
   }
-
+  
   if (car.ownerId !== ownerId) {
-    throw new AppError("Not allowed to modify this car", 403);
+    throw new AppError("Unauthorized", 403);
+  }
+  
+  if (car.status !== "DRAFT") {
+    throw new AppError("Cannot upload images after submission", 400);
+  }
+  
+  const imageData = [];
+  
+  for (const file of files) {
+    // console.log("Files received in service:", files); // Debug log
+    
+    
+    imageData.push({
+      carId,
+      imageUrl:file.path,
+    });
   }
 
-  return repo.deleteCar(carId);
-};
-
-
-// ================= ADMIN =================
-
-export const getAllCarsAdminService = async (page: number, limit: number) => {
-  const skip = (page - 1) * limit;
-
-  const [data, total] = await Promise.all([
-    repo.findAllCars(skip, limit),
-    repo.countCars(),
-  ]);
+  // ✅ IMPORTANT FIX (MISSING BEFORE)
+  await prisma.carImage.createMany({
+    data: imageData,
+  });
 
   return {
-    data,
-    meta: {
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
-    },
+    count: imageData.length,
   };
 };
 
-export const updateCarStatusService = (
-  id: number,
-  status: string,
-  reviewNote?: string
+export const submitCarForReviewService = async (
+  carId: number,
+  ownerId: number
 ) => {
-  return repo.updateCar(id, { status, reviewNote });
+  const car = await findCarById(carId);
+
+  if (!car) {
+    throw new AppError("Car not found", 404);
+  }
+
+  // ownership check
+  if (car.ownerId !== ownerId) {
+    throw new AppError("Unauthorized", 403);
+  }
+
+  // must be draft
+  if (car.status !== "DRAFT") {
+    throw new AppError("Car already submitted or processed", 400);
+  }
+
+  // check images
+  if (!car.images || car.images.length === 0) {
+    throw new AppError("At least one image is required", 400);
+  }
+
+  // check required documents
+  const docTypes = car.documents.map((d: any) => d.type);
+
+  const hasRegistration = docTypes.includes("REGISTRATION");
+  const hasInsurance = docTypes.includes("INSURANCE");
+
+  if (!hasRegistration || !hasInsurance) {
+    throw new AppError(
+      "REGISTRATION and INSURANCE documents are required",
+      400
+    );
+  }
+
+  // update status
+  const updatedCar = await updateCarStatusRepo(carId, "PENDING");
+
+  return updatedCar;
+};
+export const uploadCarDocumentService = async (
+  carId: number,
+  ownerId: number,
+  type: string,
+  file: Express.Multer.File
+) => {
+  if (!file) {
+    throw new AppError("Document file required", 400);
+  }
+
+  const car = await findCarById(carId);
+
+  if (!car) throw new AppError("Car not found", 404);
+
+  if (car.ownerId !== ownerId) {
+    throw new AppError("Unauthorized", 403);
+  }
+
+  if (car.status !== "DRAFT") {
+    throw new AppError("Cannot upload documents after submission", 400);
+  }
+
+  const doc = await prisma.carDocument.create({
+    data: {
+      carId,
+      type,
+      fileUrl: file.path,
+    },
+  });
+
+  return doc;
 };
 
-export const deleteCarAdminService = (id: number) => {
-  return repo.deleteCar(id);
-};
+export const getPublicCarsService = async (query: any) => {
+  const page = query.page || 1;
+  const limit = query.limit || 10;
 
+  const skip = (page - 1) * limit;
 
-// ================= PUBLIC =================
+  const cars = await getApprovedCarsRepo(query, skip, limit);
 
-export const getApprovedCarsService = () => {
-  return repo.findApprovedCars();
-};
-
-export const getCarByIdService = (id: number) => {
-  return repo.findCarById(id);
+  return cars;
 };
