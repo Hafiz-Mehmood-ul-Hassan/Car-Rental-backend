@@ -1,7 +1,13 @@
 import express from "express";
 import {
   createCarDraftController,
+  getOwnerCarsController,
+  getPublicCarsController,
+  getPublicCarController,
   uploadCarImagesController,
+  submitCarController,
+  updateCarAvailabilityController,
+  uploadCarDocumentController,
 } from "./car.controller";
 
 import { verifyToken } from "../../middleware/auth.middleware";
@@ -9,16 +15,7 @@ import { roleGuard } from "../../middleware/role.middleware";
 import { validate } from "../../middleware/validate.middleware";
 import { kycGuard } from "../../middleware/kyc.middleware";
 import { createCarSchema,publicCarQuerySchema } from "./car.validation";
-import {
-  getPendingCarsController,
-  approveCarController,
-  rejectCarController,
-  getPublicCarsController,
-} from "./car.admin.controller";
-import { uploadCarDocumentController } from "./car.controller";
 
-// 👇 your generic upload middleware
-import { upload } from "./../../config/upload";
 import { carUpload } from "./car.upload";
 
 const router = express.Router();
@@ -26,6 +23,8 @@ const router = express.Router();
 // =======================
 // 🚗 CREATE CAR DRAFT
 // =======================
+router.get("/owner", verifyToken, roleGuard("CAR_OWNER"), kycGuard, getOwnerCarsController);
+
 router.post(
   "/",
   verifyToken,
@@ -56,31 +55,27 @@ router.post(
   roleGuard("CAR_OWNER"),
   kycGuard,
   
-  carUpload.single("documents", 5),
+  carUpload.single("documents"),
   uploadCarDocumentController
 );
+
 // =======================
-// 📋 ADMIN ROUTES
+// 📤 SUBMIT CAR FOR REVIEW
 // =======================
-router.get(
-  "/admin/pending",
+router.patch(
+  "/:id/availability",
   verifyToken,
-  roleGuard("ADMIN"),
-  getPendingCarsController
+  roleGuard("CAR_OWNER"),
+  kycGuard,
+  updateCarAvailabilityController
 );
 
 router.patch(
-  "/admin/:id/approve",
+  "/:id/submit",
   verifyToken,
-  roleGuard("ADMIN"),
-  approveCarController
-);
-
-router.patch(
-  "/admin/:id/reject",
-  verifyToken,
-  roleGuard("ADMIN"),
-  rejectCarController
+  roleGuard("CAR_OWNER"),
+  kycGuard,
+  submitCarController
 );
 
 // =======================
@@ -92,4 +87,6 @@ router.get(
   // validate(publicCarQuerySchema),
   getPublicCarsController
 );
+// single car details route
+router.get("/public/:id", getPublicCarController );
 export default router;

@@ -24,6 +24,10 @@ export const resetPasswordSchema = z.object({
   password: z.string().min(6),
 });
 
+export const refreshTokenSchema = z.object({
+  refreshToken: z.string().min(10),
+});
+
 export const changePasswordSchema = z.object({
   oldPassword: z.string().min(6),
   newPassword: z.string().min(6),

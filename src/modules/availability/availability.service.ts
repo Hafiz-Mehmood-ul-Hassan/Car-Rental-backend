@@ -1,31 +1,26 @@
 import prisma from "../../config/prisma";
-import { isOverlapping } from "./availability.utils";
 
+/**
+ * Simple availability check using the `isBooked` flag on Car.
+ * Signature keeps optional start/end parameters for future enhancement,
+ * but currently only uses `isBooked` boolean as requested.
+ */
 export const checkAvailability = async (
   carId: number,
-  startDate: Date,
-  endDate: Date
+  _start?: Date,
+  _end?: Date
 ) => {
-  const bookings = await prisma.booking.findMany({
-    where: {
-      carId,
-      status: {
-        in: ["CONFIRMED", "ACTIVE"],
-      },
-    },
-  });
+  const car = await prisma.car.findUnique({ where: { id: carId } });
 
-  const conflict = bookings.find((b) =>
-    isOverlapping(
-      startDate,
-      endDate,
-      new Date(b.startDate),
-      new Date(b.endDate)
-    )
-  );
+  if (!car) {
+    return { available: false, reason: "Car not found" };
+  }
 
-  return {
-    available: !conflict,
-    conflict: conflict || null,
-  };
+  if (car.isBooked) {
+    return { available: false, reason: "Car is already booked" };
+  }
+
+  return { available: true };
 };
+
+export default { checkAvailability };

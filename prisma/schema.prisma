@@ -31,10 +31,15 @@ model User {
 
   isVerified Boolean @default(false)
 
+  isActive Boolean @default(true)
+
   kycStatus KYCStatus @default(NOT_SUBMITTED)
 
   resetToken    String?
   resetTokenExp DateTime?
+
+  refreshTokenHash String?
+  refreshTokenExp  DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -42,8 +47,9 @@ model User {
   kyc      KYC?
   cars     Car[]
   bookings Booking[]
-  payments      Payment[]
-  earnings      Earning[]
+  payments Payment[]
+  earnings Earning[]
+  reviews  Review[]
 }
 
 model KYC {
@@ -89,30 +95,34 @@ model Car {
   location    String
   description String?
 
-
   status     CarStatus @default(PENDING)
   reviewNote String?
+
+  // simple availability flag — true when car is booked
+  isBooked Boolean @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  owner    User      @relation(fields: [ownerId], references: [id])
-  bookings Booking[]
+  owner     User          @relation(fields: [ownerId], references: [id])
+  bookings  Booking[]
   images    CarImage[]
   documents CarDocument[]
+  reviews   Review[]
 }
 
 model CarImage {
-  id        Int      @id @default(autoincrement())
+  id Int @id @default(autoincrement())
 
-  carId     Int
+  carId Int
 
-  imageUrl  String
+  imageUrl String
 
   createdAt DateTime @default(now())
 
-  car       Car @relation(fields: [carId], references: [id], onDelete: Cascade)
+  car Car @relation(fields: [carId], references: [id], onDelete: Cascade)
 }
+
 enum CarDocumentType {
   REGISTRATION
   INSURANCE
@@ -127,40 +137,36 @@ enum CarDocumentStatus {
 }
 
 model CarDocument {
-  id         Int      @id @default(autoincrement())
+  id Int @id @default(autoincrement())
 
-  carId      Int
+  carId Int
 
-  type       CarDocumentType
+  type CarDocumentType
 
-  fileUrl    String
+  fileUrl String
 
-  fileName   String?
-  mimeType   String?
-  size       Int?
+  fileName String?
+  mimeType String?
+  size     Int?
 
-  status     CarDocumentStatus @default(PENDING)
+  status CarDocumentStatus @default(PENDING)
 
   reviewNote String?
 
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  car        Car @relation(fields: [carId], references: [id], onDelete: Cascade)
+  car Car @relation(fields: [carId], references: [id], onDelete: Cascade)
 
   @@index([carId])
 }
 
-
-
 enum BookingStatus {
-PENDING
-PAYMENT_PENDING
-CONFIRMED
-ACTIVE
-COMPLETED
-CANCELLED
-EXPIRED
+  PAYMENT_PENDING
+  CONFIRMED
+  ACTIVE
+  COMPLETED
+  CANCELLED
 }
 
 model Booking {
@@ -179,10 +185,10 @@ model Booking {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user User @relation(fields: [userId], references: [id])
-  car  Car  @relation(fields: [carId], references: [id])
-  payment       Payment?
-  earning       Earning?
+  user    User     @relation(fields: [userId], references: [id])
+  car     Car      @relation(fields: [carId], references: [id])
+  payment Payment?
+  earning Earning?
 }
 
 enum PaymentStatus {
@@ -193,25 +199,29 @@ enum PaymentStatus {
 }
 
 model Payment {
-  id            Int           @id @default(autoincrement())
+  id Int @id @default(autoincrement())
 
-  bookingId     Int           @unique
-  userId        Int
+  bookingId Int @unique
+  userId    Int
 
-  amount        Float
+  amount Float
 
-  status        PaymentStatus @default(PENDING)
+  status PaymentStatus @default(PENDING)
 
-  provider      String        // Stripe / JazzCash / etc
-  transactionId String?       @unique
+  provider String @default("STRIPE")
 
-  paidAt        DateTime?
+  stripeSessionId String? @unique
+  transactionId   String? @unique
 
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  receiptUrl String?
 
-  booking       Booking       @relation(fields: [bookingId], references: [id])
-  user          User          @relation(fields: [userId], references: [id])
+  paidAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  booking Booking @relation(fields: [bookingId], references: [id])
+  user    User    @relation(fields: [userId], references: [id])
 }
 
 enum EarningStatus {
@@ -220,20 +230,47 @@ enum EarningStatus {
 }
 
 model Earning {
-  id            Int           @id @default(autoincrement())
+  id Int @id @default(autoincrement())
 
-  ownerId       Int
-  bookingId     Int           @unique
+  ownerId   Int
+  bookingId Int @unique
 
-  grossAmount   Float         // total paid by user
-  platformFee   Float         // system cut
-  netAmount     Float         // owner receives
+  grossAmount Float // total paid by user
+  platformFee Float // system cut
+  netAmount   Float // owner receives
 
-  status        EarningStatus @default(PENDING)
+  status EarningStatus @default(PENDING)
 
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  owner         User          @relation(fields: [ownerId], references: [id])
-  booking       Booking       @relation(fields: [bookingId], references: [id])
+  owner   User    @relation(fields: [ownerId], references: [id])
+  booking Booking @relation(fields: [bookingId], references: [id])
+}
+
+enum ReviewStatus {
+  PENDING
+  VISIBLE
+  HIDDEN
+}
+
+model Review {
+  id     Int @id @default(autoincrement())
+  userId Int
+  carId  Int
+
+  rating  Int
+  comment String?
+
+  status    ReviewStatus @default(PENDING)
+  adminNote String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  car  Car  @relation(fields: [carId], references: [id], onDelete: Cascade)
+
+  @@index([carId])
+  @@index([userId])
 }

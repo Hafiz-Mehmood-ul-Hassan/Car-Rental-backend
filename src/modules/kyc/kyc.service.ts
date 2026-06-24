@@ -6,6 +6,7 @@ import {
   findKycById,
   findAllKyc,
   updateKyc,
+  findPendingKyc,
 } from "./kyc.repository";
 
 // USER
@@ -66,4 +67,8 @@ export const updateKycStatus = async (
   });
 
   return true;
+};
+
+export const getPendingKyc = async () => {
+  return findPendingKyc();
 };

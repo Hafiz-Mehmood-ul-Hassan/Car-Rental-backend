@@ -2,15 +2,13 @@ import express from "express";
 import { verifyToken } from "../../middleware/auth.middleware";
 import { roleGuard } from "../../middleware/role.middleware";
 import { validate } from "../../middleware/validate.middleware";
-import { upload } from "../../config/upload";
+import { createUpload } from "../../config/upload.factory";
+const upload = createUpload("kyc");
 import { kycSchema } from "./kyc.validation";
 
 import {
   submitKycController,
   getMyKycController,
-  getAllKycController,
-  getKycByIdController,
-  updateKycStatusController,
 } from "./kyc.controller";
 
 const router = express.Router();
@@ -29,12 +27,5 @@ router.post(
 );
 
 router.get("/me", verifyToken, getMyKycController);
-
-// ADMIN
-router.get("/", verifyToken, roleGuard("ADMIN"), getAllKycController);
-
-router.get("/:id", verifyToken, roleGuard("ADMIN"), getKycByIdController);
-
-router.patch("/:id/status", verifyToken, roleGuard("ADMIN"), updateKycStatusController);
 
 export default router;
