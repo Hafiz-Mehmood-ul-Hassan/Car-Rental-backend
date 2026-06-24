@@ -7,7 +7,12 @@ export const createCarRepo = (data: any) => {
   });
 };
 
-
+export const findCarByOwnerId = (ownerId: number) => {
+  return prisma.car.findMany({
+    where: { ownerId },
+    include: { images: true, documents: true },
+  });
+};
 
 export const findCarById = (id: number) => {
   return prisma.car.findUnique({
@@ -28,12 +33,22 @@ export const getPendingCarsRepo = () => {
 
 
 export const updateCarStatusRepo = (id: number, status: any) => {
-  console.log("Updating car status", { id, status: status['status'] });
- // Debug log
-  return prisma.car.update({
-    where: { id },
-    data: { status: status['status'] },
-  });
+  // status can be a string like "PENDING" or an object { status: "APPROVED", reviewNote: null }
+  if (typeof status === "string") {
+    return prisma.car.update({ where: { id }, data: { status: status as any } });
+  }
+
+  // assume object
+  const data: any = {};
+
+  if (status.status) data.status = status.status;
+  if (status.reviewNote !== undefined) data.reviewNote = status.reviewNote;
+
+  return prisma.car.update({ where: { id }, data });
+};
+
+export const updateCarAvailabilityRepo = (id: number, isBooked: boolean) => {
+  return prisma.car.update({ where: { id }, data: { isBooked } });
 };
 
 export const getApprovedCarsRepo = async (filters: any, skip: number, take: number) => {
@@ -42,6 +57,7 @@ export const getApprovedCarsRepo = async (filters: any, skip: number, take: numb
   return prisma.car.findMany({
     where: {
       status: "APPROVED",
+      isBooked: false,
 
       ...(brand && {
         brand: { contains: brand, mode: "insensitive" },

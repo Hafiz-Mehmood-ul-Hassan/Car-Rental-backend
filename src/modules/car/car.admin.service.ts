@@ -1,9 +1,16 @@
 import { AppError } from "../../shared/errors/AppError";
-import {
-  getPendingCarsRepo,
-  updateCarStatusRepo,
-} from "./car.repository";
+import { getPendingCarsRepo, updateCarStatusRepo } from "./car.repository";
 import prisma from "../../config/prisma";
+
+export const getAllCarsService = async () => {
+  return await prisma.car.findMany({
+    include: {
+      images: true,
+      documents: true,
+      owner: true,
+    },
+  });
+};
 
 export const getPendingCarsService = async () => {
   return await getPendingCarsRepo();
@@ -28,10 +35,7 @@ export const approveCarService = async (carId: number) => {
   });
 };
 
-export const rejectCarService = async (
-  carId: number,
-  note: string
-) => {
+export const rejectCarService = async (carId: number, note: string) => {
   const car = await prisma.car.findUnique({
     where: { id: carId },
   });

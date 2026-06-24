@@ -10,14 +10,17 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@prisma/client": "^5.22.0",
+    "@prisma/client": "^4.16.2",
+    "axios": "^1.16.1",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "form-data": "^4.0.0",
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.1.1",
-    "prisma": "^5.22.0",
+    "prisma": "^4.16.2",
+    "stripe": "^22.2.3",
     "zod": "^4.4.3"
   },
   "devDependencies": {

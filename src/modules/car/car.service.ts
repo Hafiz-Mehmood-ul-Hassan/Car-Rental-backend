@@ -1,10 +1,12 @@
 import { AppError } from "../../shared/errors/AppError";
+import { CarDocumentType } from "@prisma/client";
 import prisma from "../../config/prisma";
 import {
   createCarRepo,
   findCarById,
-  uploadCarImage,
+  findCarByOwnerId,
   updateCarStatusRepo,
+  updateCarAvailabilityRepo,
   getApprovedCarsRepo,
 } from "./car.repository";
 
@@ -37,7 +39,7 @@ export const createCarDraft = async (ownerId: number, data: any) => {
 export const addCarImagesService = async (
   carId: number,
   ownerId: number,
-  files: Express.Multer.File[]
+  files: any[]
 ) => {
   if (!files || files.length === 0) {
     throw new AppError("No images uploaded", 400);
@@ -126,7 +128,7 @@ export const uploadCarDocumentService = async (
   carId: number,
   ownerId: number,
   type: string,
-  file: Express.Multer.File
+  file: any
 ) => {
   if (!file) {
     throw new AppError("Document file required", 400);
@@ -143,11 +145,13 @@ export const uploadCarDocumentService = async (
   if (car.status !== "DRAFT") {
     throw new AppError("Cannot upload documents after submission", 400);
   }
+  // update the status to PENDING after draft document upload
+  await updateCarStatusRepo(carId, "PENDING");
 
   const doc = await prisma.carDocument.create({
     data: {
       carId,
-      type,
+      type: type as CarDocumentType,
       fileUrl: file.path,
     },
   });
@@ -164,4 +168,30 @@ export const getPublicCarsService = async (query: any) => {
   const cars = await getApprovedCarsRepo(query, skip, limit);
 
   return cars;
+};
+
+export const getOwnerCarsService = async (ownerId: number) => {
+  return findCarByOwnerId(ownerId);
+};
+
+export const updateCarAvailabilityService = async (
+  carId: number,
+  ownerId: number,
+  isAvailable: boolean
+) => {
+  const car = await findCarById(carId);
+  if (!car) {
+    throw new AppError("Car not found", 404);
+  }
+
+  if (car.ownerId !== ownerId) {
+    throw new AppError("Unauthorized", 403);
+  }
+
+  if (car.status !== "APPROVED") {
+    throw new AppError("Only approved cars can change availability", 400);
+  }
+
+  const updatedCar = await updateCarAvailabilityRepo(carId, !isAvailable);
+  return updatedCar;
 };

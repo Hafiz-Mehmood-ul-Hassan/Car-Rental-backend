@@ -7,11 +7,13 @@ import {
   getAllKyc,
   getKycById,
   updateKycStatus,
+  getPendingKyc,
 } from "./kyc.service";
 
 // USER
 export const submitKycController = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
+    // console.log("KYC Controller - User ID:", req.user.id);
     const result = await submitKyc(req.user.id, req.body, req.files);
 
     return sendResponse(res, 201, true, "KYC submitted" );
@@ -55,6 +57,15 @@ export const updateKycStatusController = async (req: AuthRequest, res: Response,
     await updateKycStatus(Number(req.params.id), status, reviewNote);
 
     return sendResponse(res, 200, true, `KYC ${status.toLowerCase()}`);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getPendingKycController = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const result = await getPendingKyc();
+    return sendResponse(res, 200, true, "Pending KYCs", result);
   } catch (err) {
     next(err);
   }

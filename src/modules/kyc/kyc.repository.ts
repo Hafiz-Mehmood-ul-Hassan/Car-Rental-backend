@@ -7,7 +7,8 @@ export const findKycByUserId = (userId: number) =>
 
 export const findKycById = (id: number) =>
   prisma.kYC.findUnique({ where: { id } });
-
+export const findPendingKyc = () =>
+  prisma.kYC.findMany({ where: { status: "PENDING" }, include: { user: true } });
 export const findAllKyc = () =>
   prisma.kYC.findMany({ include: { user: true } });
 
