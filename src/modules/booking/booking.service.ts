@@ -86,8 +86,10 @@ export const requestReturn = async (userId: number, bookingId: number) => {
     throw new AppError("Unauthorized", 403);
   }
 
-  if (booking.status !== "ACTIVE") {
-    throw new AppError("Return can only be requested for active bookings", 400);
+  const canRequestReturn = booking.status === "ACTIVE" || booking.status === "CONFIRMED";
+
+  if (!canRequestReturn) {
+    throw new AppError("Return can only be requested for active or confirmed bookings", 400);
   }
   console.log("Booking found:", booking.status);
   return prisma.booking.update({

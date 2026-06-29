@@ -6,18 +6,23 @@ const PLATFORM_FEE_RATE = 0.1;
 
 // 📊 DASHBOARD STATS
 export const getDashboardStats = async () => {
+  console.log(`getDashboardStats called`);
   const [
     totalUsers,
     pendingKyc,
     pendingCars,
     approvedCars,
     totalBookings,
+    pendingReturnRequests,
+    totalReviews,
   ] = await Promise.all([
     prisma.user.count(),
     prisma.kYC.count({ where: { status: "PENDING" } }),
     prisma.car.count({ where: { status: "PENDING" } }),
     prisma.car.count({ where: { status: "APPROVED" } }),
     prisma.booking.count(),
+    prisma.booking.count({ where: { status: "RETURN_REQUESTED" } }),
+    prisma.review.count(),
   ]);
 
   return {
@@ -26,6 +31,8 @@ export const getDashboardStats = async () => {
     pendingCars,
     approvedCars,
     totalBookings,
+    pendingReturnRequests,
+    totalReviews,
   };
 };
 
@@ -96,7 +103,7 @@ export const approvePayment = async (paymentId: number) => {
         grossAmount,
         platformFee,
         netAmount,
-        status: "AVAILABLE",
+        status: "PENDING",
       },
       create: {
         ownerId: booking.car.ownerId,
@@ -104,7 +111,7 @@ export const approvePayment = async (paymentId: number) => {
         grossAmount,
         platformFee,
         netAmount,
-        status: "AVAILABLE",
+        status: "PENDING",
       },
     }),
   ]);
@@ -122,4 +129,28 @@ export const rejectPayment = async (paymentId: number) => {
   await prisma.payment.update({ where: { id: paymentId }, data: { status: "FAILED" } });
 
   return true;
+};
+
+export const getPendingOwnerPayouts = async () => {
+  return prisma.earning.findMany({
+    where: { status: "PENDING" },
+    include: {
+      owner: { select: { id: true, name: true, email: true } },
+      booking: { include: { car: true } },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+};
+
+export const markOwnerPayoutPaid = async (earningId: number) => {
+  const earning = await prisma.earning.findUnique({ where: { id: earningId } });
+
+  if (!earning) throw new AppError("Earning record not found", 404);
+
+  if (earning.status === "AVAILABLE") throw new AppError("Payout already marked as paid", 400);
+
+  return prisma.earning.update({
+    where: { id: earningId },
+    data: { status: "AVAILABLE" },
+  });
 };

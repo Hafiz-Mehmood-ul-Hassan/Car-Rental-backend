@@ -10,7 +10,14 @@ export const createCarRepo = (data: any) => {
 export const findCarByOwnerId = (ownerId: number) => {
   return prisma.car.findMany({
     where: { ownerId },
-    include: { images: true, documents: true },
+    include: {
+      images: true,
+      documents: true,
+      bookings: {
+        include: { user: true, payment: true },
+        orderBy: { createdAt: "desc" },
+      },
+    },
   });
 };
 

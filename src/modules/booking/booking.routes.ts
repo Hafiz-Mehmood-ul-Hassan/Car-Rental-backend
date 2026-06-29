@@ -24,8 +24,8 @@ router.post(
 router.get("/me", verifyToken, getUserBookingsController);
 router.get("/owner", verifyToken, roleGuard("CAR_OWNER"), kycGuard, getOwnerBookingsController);
 
-// router.patch("/:id/request-return", verifyToken, roleGuard("RENTER"), kycGuard, requestReturnController);
-// router.patch("/:id/accept-return", verifyToken, roleGuard("CAR_OWNER"), kycGuard, acceptReturnController);
+router.patch("/:id/request-return", verifyToken, roleGuard("RENTER"), kycGuard, requestReturnController);
+router.patch("/:id/accept-return", verifyToken, roleGuard("CAR_OWNER"), kycGuard, acceptReturnController);
 
 
 export default router;

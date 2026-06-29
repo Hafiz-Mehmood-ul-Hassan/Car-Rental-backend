@@ -1,15 +1,24 @@
 import prisma from "../../config/prisma";
 
-/**
- * Simple availability check using the `isBooked` flag on Car.
- * Signature keeps optional start/end parameters for future enhancement,
- * but currently only uses `isBooked` boolean as requested.
- */
-export const checkAvailability = async (
-  carId: number,
-  _start?: Date,
-  _end?: Date
-) => {
+const BLOCKING_BOOKING_STATUSES = ["PAYMENT_PENDING", "CONFIRMED", "ACTIVE", "RETURN_REQUESTED"] as const;
+
+const findConflictingBookings = async (carId: number, start?: Date, end?: Date, excludeBookingId?: number) => {
+  if (!start || !end) {
+    return [];
+  }
+
+  return prisma.booking.findMany({
+    where: {
+      carId,
+      status: { in: BLOCKING_BOOKING_STATUSES as any },
+      ...(excludeBookingId ? { id: { not: excludeBookingId } } : {}),
+      AND: [{ startDate: { lt: end } }, { endDate: { gt: start } }],
+    },
+    select: { id: true, status: true, startDate: true, endDate: true },
+  });
+};
+
+export const checkAvailability = async (carId: number, start?: Date, end?: Date) => {
   const car = await prisma.car.findUnique({ where: { id: carId } });
 
   if (!car) {
@@ -18,6 +27,12 @@ export const checkAvailability = async (
 
   if (car.isBooked) {
     return { available: false, reason: "Car is already booked" };
+  }
+
+  const conflictingBookings = await findConflictingBookings(carId, start, end);
+
+  if (conflictingBookings.length > 0) {
+    return { available: false, reason: "Car is already reserved for the selected dates" };
   }
 
   return { available: true };

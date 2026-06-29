@@ -1,7 +1,14 @@
 import { Router } from "express";
 import { verifyToken } from "../../middleware/auth.middleware";
 import { roleGuard } from "../../middleware/role.middleware";
-import { getDashboardStats, getPendingPayments, approvePayment, rejectPayment } from "./admin.controller";
+import {
+  getDashboardStats,
+  getPendingPayments,
+  approvePayment,
+  rejectPayment,
+  getPendingOwnerPayouts,
+  markOwnerPayoutPaid,
+} from "./admin.controller";
 import kycAdminRoutes from "../kyc/kyc.admin.routes";
 import carAdminRoutes from "../car/car.admin.routes";
 import bookingAdminRoutes from "../booking/booking.admin.routes";
@@ -35,5 +42,7 @@ router.use("/reviews", reviewAdminRoutes);
 router.get("/payments/pending", getPendingPayments);
 router.patch("/payments/:id/approve", approvePayment);
 router.patch("/payments/:id/reject", rejectPayment);
+router.get("/payouts/pending", getPendingOwnerPayouts);
+router.patch("/payouts/:id/mark-paid", markOwnerPayoutPaid);
 
 export default router;

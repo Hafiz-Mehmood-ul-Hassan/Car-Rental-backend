@@ -165,6 +165,7 @@ enum BookingStatus {
   PAYMENT_PENDING
   CONFIRMED
   ACTIVE
+  RETURN_REQUESTED
   COMPLETED
   CANCELLED
 }
@@ -180,7 +181,7 @@ model Booking {
 
   totalPrice Float
 
-  status BookingStatus @default(PENDING)
+  status BookingStatus @default(PAYMENT_PENDING)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -273,4 +274,26 @@ model Review {
 
   @@index([carId])
   @@index([userId])
+}
+
+
+model Payout {
+  id          Int      @id @default(autoincrement())
+
+  ownerId     Int
+  amount      Float
+
+  method       String
+  referenceNo  String?
+  receiptUrl   String?   // uploaded image/PDF
+  notes        String?
+
+  paidById     Int
+  paidAt       DateTime @default(now())
+
+  owner  User @relation("OwnerPayout", fields: [ownerId], references: [id])
+  admin  User @relation("AdminPayout", fields: [paidById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
