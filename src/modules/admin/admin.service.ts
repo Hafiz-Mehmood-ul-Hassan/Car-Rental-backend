@@ -6,7 +6,7 @@ const PLATFORM_FEE_RATE = 0.1;
 
 // 📊 DASHBOARD STATS
 export const getDashboardStats = async () => {
-  console.log(`getDashboardStats called`);
+  // console.log(`getDashboardStats called`);
   const [
     totalUsers,
     pendingKyc,
