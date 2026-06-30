@@ -3,7 +3,9 @@ import { sendResponse } from "../../shared/responses/apiResponse";
 
 // 📊 Dashboard
 export const getDashboardStats = async (req, res) => {
+  // console.log(adminService);
   const data = await adminService.getDashboardStats();
+  // console.log(`getDashboardStats called`);
   return sendResponse(res, 200, true, "Dashboard stats", data);
 };
 
@@ -44,4 +46,15 @@ export const rejectPayment = async (req, res) => {
   const paymentId = Number(req.params.id);
   await adminService.rejectPayment(paymentId);
   return sendResponse(res, 200, true, "Payment rejected");
+};
+
+export const getPendingOwnerPayouts = async (req, res) => {
+  const data = await adminService.getPendingOwnerPayouts();
+  return sendResponse(res, 200, true, "Pending owner payouts", data);
+};
+
+export const markOwnerPayoutPaid = async (req, res) => {
+  const earningId = Number(req.params.id);
+  const data = await adminService.markOwnerPayoutPaid(earningId);
+  return sendResponse(res, 200, true, "Owner payout marked as paid", data);
 };

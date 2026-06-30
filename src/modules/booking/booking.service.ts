@@ -3,6 +3,7 @@ import { AppError } from "../../shared/errors/AppError";
 import { calculateDays } from "./booking.utils";
 import { createBookingRepo } from "./booking.repository";
 import { checkAvailability } from "../availability/availability.service";
+import { requestBookingReturn,completeBooking } from "./booking.lifecycle.service";
 
 export const createBooking = async (userId: number, data: any) => {
   const { carId, startDate, endDate } = data;
@@ -72,92 +73,47 @@ export const getOwnerBookings = async (ownerId: number) => {
   });
 };
 
-export const requestReturn = async (userId: number, bookingId: number) => {
-  const booking = await prisma.booking.findUnique({
-    where: { id: bookingId },
-    include: { car: true },
-  });
-
-  if (!booking) {
-    throw new AppError("Booking not found", 404);
-  }
-
-  if (booking.userId !== userId) {
-    throw new AppError("Unauthorized", 403);
-  }
-
-  if (booking.status !== "ACTIVE") {
-    throw new AppError("Return can only be requested for active bookings", 400);
-  }
-  console.log("Booking found:", booking.status);
-  return prisma.booking.update({
-    where: { id: bookingId },
-    data: { status : "RETURN_REQUESTED" },
-    // include: { car: true, payment: true },
-  });
+export const requestReturn = async (
+  userId: number,
+  bookingId: number
+) => {
+  return requestBookingReturn(bookingId, userId);
 };
 
-export const acceptReturn = async (ownerId: number, bookingId: number) => {
-  const booking = await prisma.booking.findUnique({
-    where: { id: bookingId },
-    include: { car: true, payment: true },
-  });
-
-  if (!booking) {
-    throw new AppError("Booking not found", 404);
-  }
-
-  if (!booking.car) {
-    throw new AppError("Car not found", 404);
-  }
-
-  if (booking.car.ownerId !== ownerId) {
-    throw new AppError("Unauthorized", 403);
-  }
-
-  if (booking.status !== "RETURN_REQUESTED") {
-    throw new AppError("Booking must be in return requested state", 400);
-  }
-
-  const [updatedBooking] = await prisma.$transaction([
-    prisma.booking.update({
-      where: { id: bookingId },
-      data: { status: "COMPLETED" },
-      include: { car: true, payment: true },
-    }),
-    prisma.car.update({ where: { id: booking.carId }, data: { isBooked: false } }),
-  ]);
-
-  return updatedBooking;
+export const acceptReturn = async (
+  ownerId: number,
+  bookingId: number
+) => {
+  return completeBooking(bookingId, ownerId);
 };
 
-export const completeReturnByUser = async (userId: number, bookingId: number) => {
-  const booking = await prisma.booking.findUnique({
-    where: { id: bookingId },
-    include: { car: true, payment: true },
-  });
+// export const completeReturnByUser = async (userId: number, bookingId: number) => {
+//   const booking = await prisma.booking.findUnique({
+//     where: { id: bookingId },
+//     include: { car: true, payment: true },
+//   });
 
-  if (!booking) {
-    throw new AppError("Booking not found", 404);
-  }
+//   if (!booking) {
+//     throw new AppError("Booking not found", 404);
+//   }
 
-  if (booking.userId !== userId) {
-    throw new AppError("Unauthorized", 403);
-  }
+//   if (booking.userId !== userId) {
+//     throw new AppError("Unauthorized", 403);
+//   }
 
-  if (booking.status !== "RETURN_REQUESTED") {
-    throw new AppError("Booking must be in return requested state", 400);
-  }
+//   if (booking.status !== "RETURN_REQUESTED") {
+//     throw new AppError("Booking must be in return requested state", 400);
+//   }
 
-  const [updatedBooking] = await prisma.$transaction([
-    prisma.booking.update({
-      where: { id: bookingId },
-      data: { status: "COMPLETED" },
-      include: { car: true, payment: true },
-    }),
-    prisma.car.update({ where: { id: booking.carId }, data: { isBooked: false } }),
-  ]);
+//   const [updatedBooking] = await prisma.$transaction([
+//     prisma.booking.update({
+//       where: { id: bookingId },
+//       data: { status: "COMPLETED" },
+//       include: { car: true, payment: true },
+//     }),
+//     prisma.car.update({ where: { id: booking.carId }, data: { isBooked: false } }),
+//   ]);
 
-  return updatedBooking;
-};
+//   return updatedBooking;
+// };
 

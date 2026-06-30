@@ -1,6 +1,7 @@
 import prisma from "../../config/prisma";
 import { BookingStatus } from "@prisma/client";
 import { AppError } from "../../shared/errors/AppError";
+import { createEarning } from "../earning/earning.service";
 
 export const getAllBookingsService = async () => {
   return prisma.booking.findMany({
@@ -86,13 +87,29 @@ export const updateBookingStatusService = async (
     return updatedBooking;
   }
 
-  if (status === "COMPLETED" || status === "CANCELLED" || status === "EXPIRED") {
-    const [updatedBooking] = await prisma.$transaction([
-      bookingUpdate,
-      prisma.car.update({ where: { id: booking.carId }, data: { isBooked: false } }),
-    ]);
-    return updatedBooking;
-  }
+if (status === "COMPLETED") {
+  const [updatedBooking] = await prisma.$transaction([
+    bookingUpdate,
+    prisma.car.update({
+      where: { id: booking.carId },
+      data: { isBooked: false },
+    }),
+  ]);
 
-  return bookingUpdate;
+  await createEarning(updatedBooking.id);
+
+  return updatedBooking;
+}
+
+if (status === "CANCELLED" || status === "EXPIRED") {
+  const [updatedBooking] = await prisma.$transaction([
+    bookingUpdate,
+    prisma.car.update({
+      where: { id: booking.carId },
+      data: { isBooked: false },
+    }),
+  ]);
+
+  return updatedBooking;
+}
 };

@@ -8,7 +8,10 @@ import adminRoutes from "./modules/admin/admin.routes";
 import bookingRoutes from "./modules/booking/booking.routes";
 import paymentRoutes from "./modules/payments/payment.routes";
 import reviewRoutes from "./modules/review/review.routes";
+import payoutRoutes from "./modules/payout/payout.routes";
+import earningRoutes from "./modules/earning/earning.routes";
 import path from "path/win32";
+import { stripeWebhookController } from "./modules/payments/payment.controller";
 // import { adminJS } from "./modules/admin/admin";
 // import AdminJSExpress from "@adminjs/express";
 
@@ -19,6 +22,13 @@ app.use(cors({
   origin: process.env.FRONTEND_URL,
   credentials: true,
 }));
+
+
+app.post(
+  ["/api/payments/stripe/webhook", "/api/payments/webhook", "/payments/webhook"],
+  express.raw({ type: "application/json" }),
+  stripeWebhookController
+);
 
 app.use(express.json());
 
@@ -38,6 +48,8 @@ app.use("/api/cars", carRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/reviews", reviewRoutes);
+app.use("/api/payouts", payoutRoutes);
+app.use("/api/earnings", earningRoutes);
 
 
 app.use(errorHandler);
