@@ -50,6 +50,8 @@ model User {
   payments Payment[]
   earnings Earning[]
   reviews  Review[]
+  ownerPayouts Payout[] @relation("OwnerPayout")
+  adminPayouts Payout[] @relation("AdminPayout")
 }
 
 model KYC {
@@ -163,11 +165,11 @@ model CarDocument {
 
 enum BookingStatus {
   PAYMENT_PENDING
-  CONFIRMED
   ACTIVE
   RETURN_REQUESTED
   COMPLETED
   CANCELLED
+  EXPIRED
 }
 
 model Booking {
@@ -189,7 +191,6 @@ model Booking {
   user    User     @relation(fields: [userId], references: [id])
   car     Car      @relation(fields: [carId], references: [id])
   payment Payment?
-  earning Earning?
 }
 
 enum PaymentStatus {
@@ -228,25 +229,24 @@ model Payment {
 enum EarningStatus {
   PENDING
   AVAILABLE
+  PARTIALLY_PAID
+  PAID
 }
 
 model Earning {
   id Int @id @default(autoincrement())
 
-  ownerId   Int
-  bookingId Int @unique
+  ownerId Int @unique
 
-  grossAmount Float // total paid by user
-  platformFee Float // system cut
-  netAmount   Float // owner receives
+  totalEarning Float @default(0)
 
-  status EarningStatus @default(PENDING)
+  paidAmount Float @default(0)
 
-  createdAt DateTime @default(now())
+  remainingAmount Float @default(0)
+
   updatedAt DateTime @updatedAt
 
-  owner   User    @relation(fields: [ownerId], references: [id])
-  booking Booking @relation(fields: [bookingId], references: [id])
+  owner User @relation(fields: [ownerId], references: [id])
 }
 
 enum ReviewStatus {
@@ -276,24 +276,32 @@ model Review {
   @@index([userId])
 }
 
+enum PayoutMethod {
+  BANK_TRANSFER
+  JAZZCASH
+  EASYPAISA
+  CASH
+}
 
 model Payout {
-  id          Int      @id @default(autoincrement())
+  id Int @id @default(autoincrement())
 
-  ownerId     Int
-  amount      Float
+  ownerId Int
+  paidById Int
 
-  method       String
-  referenceNo  String?
-  receiptUrl   String?   // uploaded image/PDF
-  notes        String?
+  amount Float
 
-  paidById     Int
-  paidAt       DateTime @default(now())
+  method PayoutMethod
 
-  owner  User @relation("OwnerPayout", fields: [ownerId], references: [id])
-  admin  User @relation("AdminPayout", fields: [paidById], references: [id])
+  referenceNo String?
+  receiptUrl String?
+  notes String?
+
+  paidAt DateTime @default(now())
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  owner User @relation("OwnerPayout", fields: [ownerId], references: [id])
+  admin User @relation("AdminPayout", fields: [paidById], references: [id])
 }

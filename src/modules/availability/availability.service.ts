@@ -1,6 +1,6 @@
 import prisma from "../../config/prisma";
 
-const BLOCKING_BOOKING_STATUSES = ["PAYMENT_PENDING", "CONFIRMED", "ACTIVE", "RETURN_REQUESTED"] as const;
+const BLOCKING_BOOKING_STATUSES = ["PAYMENT_PENDING", "COMPLETED", "ACTIVE", "RETURN_REQUESTED"] as const;
 
 const findConflictingBookings = async (carId: number, start?: Date, end?: Date, excludeBookingId?: number) => {
   if (!start || !end) {

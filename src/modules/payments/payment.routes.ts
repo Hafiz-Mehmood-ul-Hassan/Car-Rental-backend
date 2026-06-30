@@ -12,11 +12,11 @@ import { createUpload } from "../../config/upload.factory";
 const router = express.Router();
 
 const upload = createUpload("payments");
-
 router.post("/create", verifyToken, createPaymentController);
-router.get("/verify-session/:sessionId", verifyToken, verifyStripeSessionController);
 // stripe webhook endpoint
 router.post("/webhook", express.raw({ type: "application/json" }), stripeWebhookController);
+
+router.get("/verify-session/:sessionId", verifyToken, verifyStripeSessionController);
 
 // User uploads receipt for a booking
 // router.post("/upload-receipt", verifyToken, upload.single("receipt"), uploadReceiptController);

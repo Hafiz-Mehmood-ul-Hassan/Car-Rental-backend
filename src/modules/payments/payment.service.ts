@@ -19,7 +19,7 @@ export const createPaymentSession = async (bookingId: number, userId: number) =>
     throw new AppError("Unauthorized", 403);
   }
 
-  if (booking.status !== "PAYMENT_PENDING" && booking.status !== "CONFIRMED") {
+  if (booking.status !== "PAYMENT_PENDING" && booking.status !== "COMPLETED") {
     throw new AppError("Booking is not awaiting payment", 400);
   }
 
@@ -88,6 +88,7 @@ export const createPaymentSession = async (bookingId: number, userId: number) =>
 };
 
 const finalizeSuccessfulPayment = async (session: Stripe.Checkout.Session, payment: any) => {
+// console.log("finalizeSuccessfulPayment called with session:", session, "and payment:", payment);
   if (payment.status === "SUCCESS") {
     return { message: "Payment already completed", bookingId: payment.bookingId };
   }
@@ -111,11 +112,12 @@ const finalizeSuccessfulPayment = async (session: Stripe.Checkout.Session, payme
     where: {
       carId: booking.carId,
       id: { not: booking.id },
-      status: { in: ["PAYMENT_PENDING", "CONFIRMED", "ACTIVE", "RETURN_REQUESTED"] },
+      status: { in: ["PAYMENT_PENDING", "COMPLETED", "ACTIVE", "RETURN_REQUESTED"] },
       AND: [{ startDate: { lt: booking.endDate } }, { endDate: { gt: booking.startDate } }],
     },
     select: { id: true, status: true },
   });
+  console.log("1");
 
   if (conflictingBookings.length > 0) {
     await prisma.$transaction([
