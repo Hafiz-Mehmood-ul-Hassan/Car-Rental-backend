@@ -15,6 +15,7 @@ export const getDashboardStats = async () => {
     totalBookings,
     pendingReturnRequests,
     totalReviews,
+    ownerEarnings,
   ] = await Promise.all([
     prisma.user.count(),
     prisma.kYC.count({ where: { status: "PENDING" } }),
@@ -23,8 +24,13 @@ export const getDashboardStats = async () => {
     prisma.booking.count(),
     prisma.booking.count({ where: { status: "RETURN_REQUESTED" } }),
     prisma.review.count(),
+    prisma.earning.aggregate({
+      _sum: {
+        remainingAmount : true,
+      },
+    }),
   ]);
-
+  // console.log("ownerEarnings", ownerEarnings._sum?.remainingAmount);
   return {
     totalUsers,
     pendingKyc,
@@ -33,6 +39,7 @@ export const getDashboardStats = async () => {
     totalBookings,
     pendingReturnRequests,
     totalReviews,
+    ownerEarnings: ownerEarnings._sum?.remainingAmount || 0,
   };
 };
 

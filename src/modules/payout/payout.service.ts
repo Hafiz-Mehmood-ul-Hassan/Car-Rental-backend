@@ -1,76 +1,61 @@
 import prisma from "../../config/prisma";
+
 import { AppError } from "../../shared/errors/AppError";
+
+
 import {
-  createPayoutRepo,
-  findEarningByIdRepo,
-  updateEarningRepo,
+  createPayout,
+  getOwnerEarning,
+  updateOwnerEarning,
 } from "./payout.repository";
 
-export const createPayout = async (
+export const payoutOwnerService = async (
   adminId: number,
-  data: any
+  body: any
 ) => {
-
   const {
-    earningId,
+    ownerId,
     amount,
     method,
     referenceNo,
     receiptUrl,
     notes,
-  } = data;
+  } = body;
 
-  const earning = await findEarningByIdRepo(earningId);
-
-  if (!earning) {
-    throw new AppError("Earning not found", 404);
+  if (!ownerId || !amount || !method) {
+    throw new AppError("Missing required fields", 400);
   }
 
-  const remaining = earning.netAmount - earning.paidAmount;
+  const earning = await getOwnerEarning(ownerId);
+
+  if (!earning) {
+    throw new AppError("Owner earning record not found", 404);
+  }
 
   if (amount <= 0) {
     throw new AppError("Invalid payout amount", 400);
   }
 
-  if (amount > remaining) {
-    throw new AppError("Amount exceeds remaining balance", 400);
+  if (amount > earning.remainingAmount) {
+    throw new AppError(
+      "Amount exceeds remaining balance",
+      400
+    );
   }
 
-  return prisma.$transaction(async (tx) => {
+  return prisma.$transaction(async () => {
+    const payout = await createPayout({
+      ownerId,
+      paidById: adminId,
+      amount,
+      method,
+      referenceNo,
+      receiptUrl,
+      notes,
+    });
 
-    const payout = await createPayoutRepo(
-      {
-        ownerId: earning.ownerId,
-        paidById: adminId,
-        amount,
-        method,
-        referenceNo,
-        receiptUrl,
-        notes,
-      },
-      tx
-    );
-
-    const newPaidAmount = earning.paidAmount + amount;
-
-    let status = earning.status;
-
-    if (newPaidAmount >= earning.netAmount) {
-      status = "PAID";
-    } else {
-      status = "PARTIALLY_PAID";
-    }
-
-    await updateEarningRepo(
-      earning.id,
-      {
-        paidAmount: newPaidAmount,
-        status,
-      },
-      tx
-    );
+    await updateOwnerEarning(ownerId, amount);
 
     return payout;
   });
-
 };

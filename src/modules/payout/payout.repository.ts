@@ -1,28 +1,36 @@
+// payout.repository.ts
+
 import prisma from "../../config/prisma";
 
-export const createPayoutRepo = (data: any, tx = prisma) => {
-  return tx.payout.create({
+export const createPayout = (data: any) => {
+  return prisma.payout.create({
     data,
   });
 };
 
-export const findEarningByIdRepo = (earningId: number, tx = prisma) => {
-  return tx.earning.findUnique({
-    where: { id: earningId },
-    include: {
-      owner: true,
-      booking: true,
+export const getOwnerEarning = (ownerId: number) => {
+  return prisma.earning.findUnique({
+    where: {
+      ownerId,
     },
   });
 };
 
-export const updateEarningRepo = (
-  earningId: number,
-  data: any,
-  tx = prisma
+export const updateOwnerEarning = (
+  ownerId: number,
+  amount: number
 ) => {
-  return tx.earning.update({
-    where: { id: earningId },
-    data,
+  return prisma.earning.update({
+    where: {
+      ownerId,
+    },
+    data: {
+      paidAmount: {
+        increment: amount,
+      },
+      remainingAmount: {
+        decrement: amount,
+      },
+    },
   });
 };

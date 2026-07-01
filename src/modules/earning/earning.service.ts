@@ -1,53 +1,105 @@
 import prisma from "../../config/prisma";
-import { getAllEarningsRepo } from "./earning.repository";
 
-export const getAllEarnings = async () => {
-  return await getAllEarningsRepo();
-};
+import { AppError } from "../../shared/errors/AppError";
+
 export const createEarning = async (bookingId: number) => {
-  const booking = await prisma.booking.findUnique({
-    where: {
-      id: bookingId,
-    },
-    include: {
-      car: true,
-      payment: true,
-    },
-  });
+  // console.log("========== CREATE EARNING START ==========");
 
-  if (!booking || !booking.payment || !booking.car) {
-    throw new Error("Booking data not found");
-  }
+  try {
+    // console.log("Booking ID:", bookingId);
 
-  // Don't create twice
-  const existing = await prisma.earning.findUnique({
-    where: {
-      bookingId,
-    },
-  });
+    // 1. Get booking
+    const booking = await prisma.booking.findUnique({
+      where: { id: bookingId },
+      include: {
+        car: true,
+        payment: true,
+      },
+    });
 
-  if (existing) {
-    return existing;
-  }
+    console.log("Booking:", booking);
 
-  const grossAmount = booking.totalPrice;
+    if (!booking) {
+      throw new AppError("Booking not found", 404);
+    }
 
-  // 10% platform fee
-  const platformFee = grossAmount * 0.10;
+    if (!booking.car) {
+      throw new AppError("Car not found", 404);
+    }
 
-  const netAmount = grossAmount - platformFee;
+    if (!booking.payment) {
+      throw new AppError("Payment not found", 404);
+    }
 
-  return prisma.earning.create({
-    data: {
-      ownerId: booking.car.ownerId,
-      bookingId,
+    // console.log("Payment Status:", booking.payment.status);
 
+    if (booking.payment.status !== "SUCCESS") {
+      throw new AppError("Payment is not completed", 400);
+    }
+
+    const ownerId = booking.car.ownerId;
+
+    // console.log("Owner ID:", ownerId);
+
+    const grossAmount = booking.totalPrice;
+    const platformFee = grossAmount * 0.1;
+    const netAmount = grossAmount - platformFee;
+
+    console.log({
       grossAmount,
       platformFee,
       netAmount,
+    });
 
-      paidAmount: 0,
-      status: "AVAILABLE",
-    },
-  });
+    // 2. Find existing earning
+    const earning = await prisma.earning.findUnique({
+      where: { ownerId },
+    });
+
+    // console.log("Existing earning:", earning);
+
+    // 3. Create new record
+    if (!earning) {
+      // console.log("No earning found. Creating...");
+
+      const created = await prisma.earning.create({
+        data: {
+          ownerId,
+          totalEarning: netAmount,
+          paidAmount: 0,
+          remainingAmount: netAmount,
+        },
+      });
+
+      // console.log("Created:", created);
+      // console.log("========== CREATE EARNING END ==========");
+
+      return created;
+    }
+
+    // 4. Update existing record
+    // console.log("Updating earning...");
+
+    const updated = await prisma.earning.update({
+      where: { ownerId },
+      data: {
+        totalEarning: {
+          increment: netAmount,
+        },
+        remainingAmount: {
+          increment: netAmount,
+        },
+      },
+    });
+
+    // console.log("Updated:", updated);
+    // console.log("========== CREATE EARNING END ==========");
+
+    return updated;
+  } catch (error) {
+    // console.error("CREATE EARNING ERROR:");
+    // console.error(error);
+
+    throw error;
+  }
 };

@@ -15,6 +15,7 @@ export const verifyToken = (
   next: NextFunction
 ) => {
   try {
+      // console.log("verifyToken");
     const authHeader = req.headers.authorization;
 
     if (!authHeader) {

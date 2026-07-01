@@ -14,6 +14,8 @@ import carAdminRoutes from "../car/car.admin.routes";
 import bookingAdminRoutes from "../booking/booking.admin.routes";
 import authAdminRoutes from "../auth/auth.admin.routes";
 import reviewAdminRoutes from "./review.admin.routes";
+import earningAdminRoutes from "../earning/earning.admin.routes";
+import payoutAdminRoutes from "../payout/payout.admin.routes";
 
 const router = Router();
 
@@ -34,6 +36,12 @@ router.use("/cars", carAdminRoutes);
 
 // � Bookings
 router.use("/bookings", bookingAdminRoutes);
+
+// 💰 Earnings
+router.use("/earnings", earningAdminRoutes);
+
+// 💳 Payouts
+router.use("/payouts", payoutAdminRoutes);
 
 // 📝 Reviews
 router.use("/reviews", reviewAdminRoutes);

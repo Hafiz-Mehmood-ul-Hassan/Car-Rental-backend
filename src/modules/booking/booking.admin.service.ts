@@ -48,9 +48,7 @@ export const updateBookingStatusService = async (
   status: string,
 ) => {
   const allowedStatuses = [
-    "PENDING",
     "PAYMENT_PENDING",
-    "CONFIRMED",
     "ACTIVE",
     "RETURN_REQUESTED",
     "COMPLETED",
