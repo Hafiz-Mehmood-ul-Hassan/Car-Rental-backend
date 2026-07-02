@@ -226,12 +226,6 @@ model Payment {
   user    User    @relation(fields: [userId], references: [id])
 }
 
-enum EarningStatus {
-  PENDING
-  AVAILABLE
-  PARTIALLY_PAID
-  PAID
-}
 
 model Earning {
   id Int @id @default(autoincrement())

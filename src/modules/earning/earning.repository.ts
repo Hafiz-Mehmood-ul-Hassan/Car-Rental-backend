@@ -1,7 +1,8 @@
 import prisma from "../../config/prisma";
 
-export const getAllEarningsRepo = () => {
-  return prisma.earning.findMany({
+export const getAllEarnings = async () => {
+  console.log("reository hit");
+  return await prisma.earning.findMany({
     include: {
       owner: {
         select: {
@@ -10,16 +11,9 @@ export const getAllEarningsRepo = () => {
           email: true,
         },
       },
-      booking: {
-        select: {
-          id: true,
-          startDate: true,
-          endDate: true,
-        },
-      },
     },
     orderBy: {
-      createdAt: "desc",
+      remainingAmount: "desc",
     },
   });
 };

@@ -1,18 +1,33 @@
-import { Request, Response } from "express";
-import { createPayout } from "./payout.service";
+import { Request, Response, NextFunction } from "express";
+import { payoutOwnerService } from "./payout.service";
+import { sendResponse } from "../../shared/responses/apiResponse";
 
-export const createPayoutController = async (
+export const payoutOwnerController = async (
   req: Request,
-  res: Response
+  res: Response,
+  next: NextFunction
 ) => {
+  try {
+    const receiptUrl = req.file
+      ? `/uploads/payouts/${req.file.filename}`
+      : null;
 
-  const adminId = req.user.id;
+    const payout = await payoutOwnerService(
+      req.user.id,
+      {
+        ...req.body,
+        receiptUrl,
+      }
+    );
 
-  const payout = await createPayout(adminId, req.body);
-
-  res.status(201).json({
-    success: true,
-    data: payout,
-  });
-
+    return sendResponse(
+      res,
+      200,
+      true,
+      "Payout processed successfully",
+      payout
+    );
+  } catch (error) {
+    next(error);
+  }
 };

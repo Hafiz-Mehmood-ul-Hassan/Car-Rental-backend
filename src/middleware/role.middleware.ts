@@ -5,6 +5,7 @@ import { AuthRequest } from "./auth.middleware";
 export const roleGuard = (...allowedRoles: string[]) => {
   return (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
+        // console.log("roleGuard");
       const userRole = req.user?.role;
 
       if (!userRole) {
