@@ -5,7 +5,7 @@ import { roleGuard } from "../../middleware/role.middleware";
 
 const router = Router();
 
-router.use(verifyToken);
+
 
 
 

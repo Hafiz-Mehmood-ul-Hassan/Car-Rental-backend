@@ -7,11 +7,57 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum VerificationPurpose {
+  REGISTER
+  RESET_PASSWORD
+  CHANGE_EMAIL
+  CHANGE_PASSWORD
+  DELETE_ACCOUNT
+}
+
+enum VerificationStatus {
+  PENDING
+  VERIFIED
+  EXPIRED
+  CANCELLED
+}
+
 enum Role {
   ADMIN
   CAR_OWNER
   RENTER
 }
+
+model VerificationSession {
+  id Int @id @default(autoincrement())
+
+  email String
+
+  tokenHash String @unique
+
+  purpose VerificationPurpose
+
+  payload Json
+
+  status VerificationStatus @default(PENDING)
+
+  attempts Int @default(0)
+
+  ipAddress String?
+  userAgent String?
+
+  expiresAt DateTime
+  verifiedAt DateTime?
+  lastAttemptAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([email])
+  @@index([email, purpose])
+  @@index([status])
+}
+
 
 enum KYCStatus {
   NOT_SUBMITTED

@@ -14,6 +14,8 @@ import path from "path/win32";
 import { stripeWebhookController } from "./modules/payments/payment.controller";
 // import { adminJS } from "./modules/admin/admin";
 // import AdminJSExpress from "@adminjs/express";
+import verificationRoutes from "./modules/verification/verification.routes";
+
 
 const app = express();
 
@@ -43,6 +45,7 @@ app.use(
 
 app.use('/admin', adminRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/verification", verificationRoutes);
 app.use("/api/kyc", kycRoutes);
 app.use("/api/cars", carRoutes);
 app.use("/api/payments", paymentRoutes);

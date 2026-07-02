@@ -1,7 +1,7 @@
 import prisma from "../../config/prisma";
 
 export const getAllEarnings = async () => {
-  console.log("reository hit");
+  // console.log("reository hit");
   return await prisma.earning.findMany({
     include: {
       owner: {

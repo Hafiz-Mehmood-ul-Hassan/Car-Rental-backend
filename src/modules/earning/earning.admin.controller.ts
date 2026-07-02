@@ -9,7 +9,7 @@ export const getAllEarningsController = async (
   res: Response,
   next: NextFunction
 ) => {
-    console.log("admin api hit");
+    // console.log("admin api hit");
   try {
     const earnings = await getAllEarningsService();
 

@@ -29,8 +29,5 @@ router.patch("/change-password",verifyToken,validate(changePasswordSchema),chang
 router.patch("/me/update", verifyToken, updateMe);
 router.delete("/me/delete", verifyToken, deleteMe); 
 
-// =============================
-// admin routes
-// =============================
 
 export default router;
