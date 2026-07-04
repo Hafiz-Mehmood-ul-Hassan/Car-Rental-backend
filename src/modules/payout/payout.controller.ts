@@ -7,18 +7,19 @@ export const payoutOwnerController = async (
   res: Response,
   next: NextFunction
 ) => {
+    // console.log(req.file);
+    // console.log(req.body);
+
   try {
     const receiptUrl = req.file
       ? `/uploads/payouts/${req.file.filename}`
       : null;
 
-    const payout = await payoutOwnerService(
-      req.user.id,
-      {
-        ...req.body,
-        receiptUrl,
-      }
-    );
+        const payout = await payoutOwnerService(
+        req.user.id,
+        req.body,
+        req.file
+      );
 
     return sendResponse(
       res,

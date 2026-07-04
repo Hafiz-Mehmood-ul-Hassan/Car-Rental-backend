@@ -1,5 +1,9 @@
-import { tr } from "zod/locales";
 import prisma from "../../config/prisma";
+import {
+  Prisma,
+  User,
+  Role,
+} from "@prisma/client";
 
 export const findUserByEmail = async (email: string) => {
   return prisma.user.findUnique({
@@ -7,9 +11,14 @@ export const findUserByEmail = async (email: string) => {
   });
 };
 
-export const createUser = async (data: any) => {
+export const createUser = async (
+  data: Prisma.UserCreateInput
+) => {
   return prisma.user.create({
-    data,
+    data: {
+      ...data,
+      isVerified: true, // optional safety default
+    },
   });
 };
 

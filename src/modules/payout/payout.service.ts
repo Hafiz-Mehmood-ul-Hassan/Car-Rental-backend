@@ -11,16 +11,21 @@ import {
 
 export const payoutOwnerService = async (
   adminId: number,
-  body: any
+  body: any,
+  file?: Express.Multer.File
 ) => {
   const {
-    ownerId,
-    amount,
-    method,
-    referenceNo,
-    receiptUrl,
-    notes,
-  } = body;
+  method,
+  referenceNo,
+  notes,
+} = body;
+
+const ownerId = Number(body.ownerId);
+const amount = Number(body.amount);
+
+const receiptUrl = file
+  ? `/uploads/payouts/${file.filename}`
+  : null;
 
   if (!ownerId || !amount || !method) {
     throw new AppError("Missing required fields", 400);

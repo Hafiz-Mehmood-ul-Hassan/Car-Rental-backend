@@ -14,6 +14,7 @@ import {
   updateUserRefreshToken,
   findUserByRefreshToken,
 } from "./auth.repository";
+import { createRegistrationVerification } from "../verification/verification.service";
 import { AppError } from "../../shared/errors/AppError";
 import { generateToken, generateRefreshToken, verifyRefreshToken } from "../../shared/utils/jwt";
 import { KYCStatus } from "@prisma/client";
@@ -37,20 +38,17 @@ export const registerUser = async (data: any) => {
 
   const hashedPassword = await bcrypt.hash(password, 10);
 
-  const user = await createUser({
-    name,
+  await createRegistrationVerification({
     email,
-    password: hashedPassword,
-    role,
-    isVerified: false,
-    kycStatus: "NOT_SUBMITTED",
+    payload: {
+      name,
+      passwordHash: hashedPassword,
+      role,
+    },
   });
 
   return {
-    id: user.id,
-    name: user.name,
-    email: user.email,
-    role: user.role,
+    message: "Please verify your email",
   };
 };
 
