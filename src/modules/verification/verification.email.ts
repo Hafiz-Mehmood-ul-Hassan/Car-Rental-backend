@@ -4,7 +4,7 @@ export const sendVerificationEmail = async (
   email: string,
   token: string
 ) => {
-  const url = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
+  const url = `${process.env.FRONTEND_URL}/auth/verify/register?token=${token}`;
 
   return sendEmail({
     to: "raomahmoodhassan147@gmail.com",

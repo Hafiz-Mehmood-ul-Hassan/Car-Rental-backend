@@ -6,7 +6,7 @@ import { VerificationPurpose, VerificationStatus } from "@prisma/client";
 
 import prisma from "../../config/prisma"
 
-import {AppError } from "../../shared/errors/AppError";
+import { AppError } from "../../shared/errors/AppError";
 
 import {
   createVerificationSession,

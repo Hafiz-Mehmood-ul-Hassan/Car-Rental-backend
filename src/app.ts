@@ -45,7 +45,7 @@ app.use(
 
 app.use('/admin', adminRoutes);
 app.use("/api/auth", authRoutes);
-app.use("/verification", verificationRoutes);
+app.use("/api/verification", verificationRoutes);
 app.use("/api/kyc", kycRoutes);
 app.use("/api/cars", carRoutes);
 app.use("/api/payments", paymentRoutes);
