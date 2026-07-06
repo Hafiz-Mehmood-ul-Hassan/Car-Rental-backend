@@ -68,7 +68,7 @@ export const getUserBookings = async (userId: number) => {
 export const getOwnerBookings = async (ownerId: number) => {
   return prisma.booking.findMany({
     where: { car: { ownerId } },
-    include: { car: true, user: true, payment: true, earning: true },
+    include: { car: true, user: true, payment: true, },
     orderBy: { createdAt: "desc" },
   });
 };

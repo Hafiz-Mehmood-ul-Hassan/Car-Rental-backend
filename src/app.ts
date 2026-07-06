@@ -10,7 +10,7 @@ import paymentRoutes from "./modules/payments/payment.routes";
 import reviewRoutes from "./modules/review/review.routes";
 import payoutRoutes from "./modules/payout/payout.routes";
 import earningRoutes from "./modules/earning/earning.routes";
-import path from "path/win32";
+import path from "path";
 import { stripeWebhookController } from "./modules/payments/payment.controller";
 // import { adminJS } from "./modules/admin/admin";
 // import AdminJSExpress from "@adminjs/express";
@@ -19,11 +19,12 @@ import verificationRoutes from "./modules/verification/verification.routes";
 
 const app = express();
 
-
+console.log("FRONTEND_URL:", process.env.FRONTEND_URL);
 app.use(cors({
   origin: process.env.FRONTEND_URL,
   credentials: true,
 }));
+
 
 
 app.post(
